@@ -1,0 +1,271 @@
+<!-- backend/core/templates/professor/atividade_submissoes.html -->
+{% extends 'base.html' %}
+
+{% block title %}Submissões - {{ atividade.titulo }} - SmartClass{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="{% url 'professor_atividades' %}" 
+       class="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-flex items-center">
+        <i class="fas fa-arrow-left mr-2"></i>
+        Voltar para Atividades
+    </a>
+    
+    <div class="mt-4 bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">{{ atividade.titulo }}</h1>
+                <p class="text-gray-600 mt-2">{{ atividade.descricao|truncatewords:30 }}</p>
+                <div class="flex gap-4 mt-4 text-sm">
+                    <span class="text-gray-600">
+                        <i class="far fa-calendar mr-1"></i>
+                        Prazo: {{ atividade.prazo_entrega|date:"d/m/Y" }}
+                    </span>
+                    <span class="text-gray-600">
+                        <i class="far fa-clock mr-1"></i>
+                        Criada em: {{ atividade.created_at|date:"d/m/Y às H:i" }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                {% if atividade.pode_editar %}
+                <a href="{% url 'atividade_edit' atividade.pk %}" 
+                   class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-edit mr-1"></i>
+                    Editar
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estatísticas -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="bg-blue-100 rounded-full p-3 mr-4">
+                <i class="fas fa-users text-blue-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-gray-500 text-sm">Total de Alunos</p>
+                <p class="text-2xl font-bold text-gray-900">{{ total_alunos }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="bg-green-100 rounded-full p-3 mr-4">
+                <i class="fas fa-paper-plane text-green-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-gray-500 text-sm">Submissões Enviadas</p>
+                <p class="text-2xl font-bold text-gray-900">{{ total_submissoes }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="bg-yellow-100 rounded-full p-3 mr-4">
+                <i class="fas fa-hourglass-half text-yellow-600 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-gray-500 text-sm">Aguardando Correção</p>
+                <p class="text-2xl font-bold text-gray-900">{{ submissoes_pendentes }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Alunos com Submissões -->
+<div class="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-900">
+            <i class="fas fa-list-check mr-2"></i>
+            Submissões dos Alunos
+        </h2>
+    </div>
+    
+    <div class="divide-y divide-gray-200">
+        {% for item in alunos_info %}
+        <div class="hover:bg-gray-50 transition-colors">
+            <!-- Cabeçalho do Aluno (Collapse Toggle) -->
+            <button type="button" 
+                    onclick="toggleSubmissao({{ item.aluno.pk }})"
+                    class="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none focus:bg-gray-50">
+                <div class="flex items-center flex-1">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold mr-4">
+                        {{ item.aluno.nome|slice:":1"|upper }}
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900">{{ item.aluno.nome }}</h3>
+                        <p class="text-sm text-gray-500">RA: {{ item.aluno.ra }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    {% if item.status == 'pendente' %}
+                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                        <i class="fas fa-clock mr-1"></i>
+                        Não Enviado
+                    </span>
+                    {% elif item.submissao.nota is None %}
+                    <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        Aguardando Correção
+                    </span>
+                    {% else %}
+                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Nota: {{ item.submissao.nota }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if item.status != 'pendente' %}
+                    <i class="fas fa-chevron-down transition-transform transform" id="icon-{{ item.aluno.pk }}"></i>
+                    {% endif %}
+                </div>
+            </button>
+            
+            <!-- Conteúdo da Submissão (Collapse) -->
+            {% if item.submissao %}
+            <div id="collapse-{{ item.aluno.pk }}" class="hidden border-t border-gray-200 bg-gray-50">
+                <div class="p-6">
+                    <!-- Resposta do Aluno -->
+                    <div class="mb-6">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-comment-dots mr-2 text-blue-600"></i>
+                            Resposta do Aluno
+                        </h4>
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <p class="text-gray-700 whitespace-pre-wrap">{{ item.submissao.resposta }}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            <i class="far fa-clock mr-1"></i>
+                            Enviado em: {{ item.submissao.enviado_em|date:"d/m/Y às H:i" }}
+                        </p>
+                    </div>
+                    
+                    <!-- Formulário de Correção -->
+                    <form onsubmit="corrigirSubmissao(event, {{ item.submissao.pk }}, '{{ item.aluno.nome }}')" 
+                          id="form-{{ item.submissao.pk }}"
+                          class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Nota -->
+                            <div>
+                                <label for="nota-{{ item.submissao.pk }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Nota (0 a 10)
+                                </label>
+                                <input type="number" 
+                                       id="nota-{{ item.submissao.pk }}"
+                                       name="nota"
+                                       step="0.01"
+                                       min="0"
+                                       max="10"
+                                       value="{{ item.submissao.nota|default:'' }}"
+                                       class="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Ex: 8.5">
+                            </div>
+                        </div>
+                        
+                        <!-- Observação -->
+                        <div>
+                            <label for="obs-{{ item.submissao.pk }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                Observação / Feedback (opcional)
+                            </label>
+                            <textarea id="obs-{{ item.submissao.pk }}"
+                                      name="observacao"
+                                      rows="3"
+                                      class="block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      placeholder="Deixe um feedback para o aluno...">{{ item.submissao.observacao|default:'' }}</textarea>
+                        </div>
+                        
+                        <!-- Botão Enviar -->
+                        <div class="flex justify-end">
+                            <button type="submit" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg transition-colors flex items-center">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                Salvar Correção
+                            </button>
+                        </div>
+                        
+                        {% if item.submissao.corrigido_em %}
+                        <p class="text-xs text-green-600 text-right">
+                            <i class="fas fa-check mr-1"></i>
+                            Última correção: {{ item.submissao.corrigido_em|date:"d/m/Y às H:i" }}
+                        </p>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="p-12 text-center">
+            <i class="fas fa-inbox text-gray-300 text-5xl mb-4"></i>
+            <p class="text-gray-500">Nenhum aluno cadastrado no sistema</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleSubmissao(alunoId) {
+        const collapse = document.getElementById(`collapse-${alunoId}`);
+        const icon = document.getElementById(`icon-${alunoId}`);
+        
+        if (!collapse) return; // Não tem submissão
+        
+        collapse.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+    }
+    
+    async function corrigirSubmissao(event, submissaoId, alunoNome) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const nota = form.querySelector('[name="nota"]').value;
+        const observacao = form.querySelector('[name="observacao"]').value;
+        
+        // Validação básica
+        if (nota && (parseFloat(nota) < 0 || parseFloat(nota) > 10)) {
+            showToast('A nota deve estar entre 0 e 10', 'error');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('nota', nota);
+        formData.append('observacao', observacao);
+        
+        try {
+            const response = await fetch(`/professor/submissoes/${submissaoId}/corrigir/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(`Correção salva para ${alunoNome}!`, 'success');
+                
+                // Atualizar badge de status (opcional - recarregar página é mais simples)
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showToast(data.message, 'error');
+            }
+        } catch (error) {
+            showToast('Erro ao salvar correção. Tente novamente.', 'error');
+            console.error('Erro:', error);
+        }
+    }
+</script>

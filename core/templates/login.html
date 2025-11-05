@@ -1,0 +1,152 @@
+<!-- backend/core/templates/login.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SmartClass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+        <!-- Logo e Título -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+                <i class="fas fa-graduation-cap text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">SmartClass</h1>
+            <p class="text-gray-600 mt-2">Sistema de Gestão Escolar com IA</p>
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="rounded-lg p-4 mb-3 {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                <div class="flex">
+                    <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} mr-3 mt-0.5"></i>
+                    <p class="text-sm">{{ message }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Card de Login -->
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <!-- Tabs para selecionar tipo de usuário -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button type="button" 
+                        onclick="switchTab('professor')" 
+                        id="tab-professor"
+                        class="flex-1 py-3 px-4 text-center font-medium transition-colors border-b-2 border-blue-500 text-blue-600">
+                    <i class="fas fa-chalkboard-teacher mr-2"></i>
+                    Professor
+                </button>
+                <button type="button" 
+                        onclick="switchTab('aluno')" 
+                        id="tab-aluno"
+                        class="flex-1 py-3 px-4 text-center font-medium transition-colors border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-user-graduate mr-2"></i>
+                    Aluno
+                </button>
+            </div>
+            
+            <!-- Formulário -->
+            <form method="POST" action="{% url 'login' %}" id="login-form">
+                {% csrf_token %}
+                <input type="hidden" name="user_type" id="user_type" value="professor">
+                
+                <!-- Campo Username/RA -->
+                <div class="mb-4">
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span id="label-username">Usuário</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" 
+                               name="username" 
+                               id="username" 
+                               required
+                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Digite seu usuário">
+                    </div>
+                </div>
+                
+                <!-- Campo Senha -->
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        Senha
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400"></i>
+                        </div>
+                        <input type="password" 
+                               name="password" 
+                               id="password" 
+                               required
+                               class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Digite sua senha">
+                    </div>
+                </div>
+                
+                <!-- Botão de Login -->
+                <button type="submit" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Entrar
+                </button>
+            </form>
+        </div>
+        
+        <!-- Info adicional -->
+        <div class="mt-6 text-center text-sm text-gray-600">
+            <p>
+                <i class="fas fa-info-circle mr-1"></i>
+                Para acessar o painel administrativo, use 
+                <a href="/admin/" class="text-blue-600 hover:text-blue-700 font-medium">/admin</a>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(type) {
+            const professorTab = document.getElementById('tab-professor');
+            const alunoTab = document.getElementById('tab-aluno');
+            const userTypeInput = document.getElementById('user_type');
+            const labelUsername = document.getElementById('label-username');
+            const usernameInput = document.getElementById('username');
+            
+            if (type === 'professor') {
+                professorTab.classList.add('border-blue-500', 'text-blue-600');
+                professorTab.classList.remove('border-transparent', 'text-gray-500');
+                alunoTab.classList.remove('border-blue-500', 'text-blue-600');
+                alunoTab.classList.add('border-transparent', 'text-gray-500');
+                
+                userTypeInput.value = 'professor';
+                labelUsername.textContent = 'Usuário';
+                usernameInput.placeholder = 'Digite seu usuário';
+            } else {
+                alunoTab.classList.add('border-blue-500', 'text-blue-600');
+                alunoTab.classList.remove('border-transparent', 'text-gray-500');
+                professorTab.classList.remove('border-blue-500', 'text-blue-600');
+                professorTab.classList.add('border-transparent', 'text-gray-500');
+                
+                userTypeInput.value = 'aluno';
+                labelUsername.textContent = 'RA (Registro Acadêmico)';
+                usernameInput.placeholder = 'Digite seu RA';
+            }
+        }
+    </script>
+</body>
+</html>

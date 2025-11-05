@@ -1,0 +1,216 @@
+<!-- backend/core/templates/professor/atividade_form.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Atividade - SmartClass{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <a href="{% url 'professor_atividades' %}" 
+           class="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Voltar para Atividades
+        </a>
+        <h1 class="text-3xl font-bold text-gray-900 mt-4">{{ action }} Atividade</h1>
+        <p class="text-gray-600 mt-2">
+            {% if action == 'Criar' %}
+                Use a IA para ajudar na criação do conteúdo
+            {% else %}
+                Edite os detalhes da atividade
+            {% endif %}
+        </p>
+    </div>
+    
+    <!-- Formulário -->
+    <div class="bg-white rounded-lg shadow-lg p-8">
+        <form method="POST" id="atividade-form">
+            {% csrf_token %}
+            
+            <!-- Título -->
+            <div class="mb-6">
+                <label for="id_titulo" class="block text-sm font-medium text-gray-700 mb-2">
+                    Título da Atividade *
+                </label>
+                <input type="text" 
+                       name="titulo" 
+                       id="id_titulo" 
+                       required
+                       value="{% if form.titulo.value %}{{ form.titulo.value }}{% endif %}"
+                       class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="Ex: Exercícios de Matemática - Frações">
+            </div>
+            
+            <!-- Descrição com IA -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <label for="id_descricao" class="block text-sm font-medium text-gray-700">
+                        Descrição da Atividade *
+                    </label>
+                    <button type="button" 
+                            onclick="toggleAIPrompt()"
+                            class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded-lg transition-all flex items-center text-sm font-medium shadow-md">
+                        <i class="fas fa-magic mr-2"></i>
+                        Gerar com IA
+                    </button>
+                </div>
+                
+                <!-- Prompt para IA (inicialmente oculto) -->
+                <div id="ai-prompt-container" class="hidden mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg">
+                    <label for="ai-prompt" class="block text-sm font-medium text-purple-900 mb-2">
+                        <i class="fas fa-robot mr-2"></i>
+                        Descreva o que você quer que a IA crie:
+                    </label>
+                    <textarea id="ai-prompt" 
+                              rows="3"
+                              class="block w-full px-4 py-3 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3"
+                              placeholder="Ex: Crie uma atividade sobre fotossíntese para alunos do 6º ano, com 5 questões explicativas"></textarea>
+                    <div class="flex gap-2">
+                        <button type="button" 
+                                onclick="gerarComIA()"
+                                id="btn-gerar-ia"
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium">
+                            <i class="fas fa-wand-magic-sparkles mr-2"></i>
+                            Gerar Conteúdo
+                        </button>
+                        <button type="button" 
+                                onclick="regenerarIA()"
+                                id="btn-regenerar"
+                                class="hidden bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Regenerar
+                        </button>
+                        <button type="button" 
+                                onclick="toggleAIPrompt()"
+                                class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors text-sm font-medium">
+                            Cancelar
+                        </button>
+                    </div>
+                    <div id="ai-loading" class="hidden mt-3 flex items-center text-purple-700">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        <span>Gerando conteúdo com IA...</span>
+                    </div>
+                </div>
+                
+                <textarea name="descricao" 
+                          id="id_descricao" 
+                          required
+                          rows="12"
+                          class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Descreva a atividade ou use a IA para gerar o conteúdo...">{% if form.descricao.value %}{{ form.descricao.value }}{% endif %}</textarea>
+                <p class="text-sm text-gray-500 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Você pode editar o texto gerado pela IA antes de salvar
+                </p>
+            </div>
+            
+            <!-- Prazo de Entrega -->
+            <div class="mb-8">
+                <label for="id_prazo_entrega" class="block text-sm font-medium text-gray-700 mb-2">
+                    Prazo de Entrega *
+                </label>
+                <input type="date" 
+                       name="prazo_entrega" 
+                       id="id_prazo_entrega" 
+                       required
+                       value="{% if form.prazo_entrega.value %}{{ form.prazo_entrega.value|date:'Y-m-d' }}{% endif %}"
+                       class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <!-- Botões -->
+            <div class="flex gap-4">
+                <button type="submit" 
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-save mr-2"></i>
+                    Salvar Atividade
+                </button>
+                <a href="{% url 'professor_atividades' %}" 
+                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let lastPrompt = '';
+    
+    function toggleAIPrompt() {
+        const container = document.getElementById('ai-prompt-container');
+        container.classList.toggle('hidden');
+        
+        if (!container.classList.contains('hidden')) {
+            document.getElementById('ai-prompt').focus();
+        }
+    }
+    
+    async function gerarComIA() {
+        const prompt = document.getElementById('ai-prompt').value.trim();
+        
+        if (!prompt) {
+            showToast('Por favor, descreva o que você quer que a IA crie', 'warning');
+            return;
+        }
+        
+        lastPrompt = prompt;
+        
+        const btnGerar = document.getElementById('btn-gerar-ia');
+        const btnRegenerar = document.getElementById('btn-regenerar');
+        const loading = document.getElementById('ai-loading');
+        const descricaoField = document.getElementById('id_descricao');
+        
+        // Mostrar loading
+        btnGerar.disabled = true;
+        loading.classList.remove('hidden');
+        
+        try {
+            const response = await fetch('{% url "gerar_com_ia" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                descricaoField.value = data.conteudo;
+                showToast(data.message, 'success');
+                
+                // Mostrar botão regenerar
+                btnRegenerar.classList.remove('hidden');
+                
+                // Fechar o prompt após sucesso
+                setTimeout(() => {
+                    toggleAIPrompt();
+                }, 1000);
+            } else {
+                showToast(data.message, 'error');
+            }
+        } catch (error) {
+            showToast('Erro ao conectar com a IA. Tente novamente.', 'error');
+            console.error('Erro:', error);
+        } finally {
+            btnGerar.disabled = false;
+            loading.classList.add('hidden');
+        }
+    }
+    
+    async function regenerarIA() {
+        if (lastPrompt) {
+            await gerarComIA();
+        }
+    }
+    
+    // Validação de data mínima (hoje)
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('id_prazo_entrega').setAttribute('min', today);
+    });
+</script>

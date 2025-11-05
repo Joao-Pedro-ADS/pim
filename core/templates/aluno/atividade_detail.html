@@ -1,0 +1,171 @@
+<!-- backend/core/templates/aluno/atividade_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ atividade.titulo }} - SmartClass{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <a href="{% url 'aluno_atividades' %}" 
+           class="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Voltar para Atividades
+        </a>
+    </div>
+    
+    <!-- Informações da Atividade -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+        <!-- Header com título -->
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+            <h1 class="text-2xl font-bold text-white mb-2">{{ atividade.titulo }}</h1>
+            <div class="flex items-center text-blue-100 text-sm">
+                <i class="far fa-calendar mr-2"></i>
+                <span>Prazo de entrega: {{ atividade.prazo_entrega|date:"d/m/Y" }}</span>
+                {% if atividade.prazo_entrega < today %}
+                <span class="ml-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Prazo Vencido
+                </span>
+                {% else %}
+                <span class="ml-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    Prazo em Aberto
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Descrição da Atividade -->
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <i class="fas fa-file-alt mr-2 text-blue-600"></i>
+                Descrição da Atividade
+            </h2>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <p class="text-gray-700 whitespace-pre-wrap leading-relaxed">{{ atividade.descricao }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Formulário de Envio -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-pen mr-2 text-blue-600"></i>
+                Sua Resposta
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">
+                <i class="fas fa-info-circle mr-1"></i>
+                Atenção: Após enviar, você não poderá mais editar sua resposta
+            </p>
+        </div>
+        
+        <form method="POST" id="form-envio">
+            {% csrf_token %}
+            <div class="p-6">
+                <textarea name="resposta" 
+                          id="resposta"
+                          required
+                          rows="12"
+                          class="block w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          placeholder="Digite sua resposta aqui..."></textarea>
+                
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                    <span>Dica: Leia atentamente a atividade antes de responder. Seja claro e objetivo.</span>
+                </div>
+            </div>
+            
+            <!-- Botões -->
+            <div class="px-6 pb-6 flex gap-4">
+                <button type="submit" 
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-6 rounded-lg transition-all flex items-center justify-center text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <i class="fas fa-paper-plane mr-3 text-xl"></i>
+                    Enviar Atividade
+                </button>
+                <a href="{% url 'aluno_atividades' %}" 
+                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-4 px-6 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Aviso importante -->
+    <div class="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800 mb-1">Importante!</h3>
+                <p class="text-sm text-yellow-700">
+                    Após enviar sua resposta, você <strong>não poderá mais editá-la</strong>. 
+                    Revise cuidadosamente antes de clicar em "Enviar Atividade".
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Confirmação antes de enviar
+    document.getElementById('form-envio').addEventListener('submit', function(e) {
+        const resposta = document.getElementById('resposta').value.trim();
+        
+        if (!resposta) {
+            e.preventDefault();
+            showToast('Por favor, escreva sua resposta antes de enviar', 'warning');
+            return;
+        }
+        
+        if (resposta.length < 50) {
+            const confirmar = confirm('Sua resposta parece muito curta. Tem certeza que deseja enviar assim?');
+            if (!confirmar) {
+                e.preventDefault();
+                return;
+            }
+        }
+        
+        const confirmacao = confirm('Você tem certeza que deseja enviar? Após o envio não será possível editar.');
+        if (!confirmacao) {
+            e.preventDefault();
+        }
+    });
+    
+    // Auto-save no localStorage (para não perder o texto)
+    const textarea = document.getElementById('resposta');
+    const storageKey = 'rascunho_atividade_{{ atividade.pk }}';
+    
+    // Carregar rascunho salvo
+    const rascunho = localStorage.getItem(storageKey);
+    if (rascunho) {
+        textarea.value = rascunho;
+        showToast('Rascunho recuperado!', 'info');
+    }
+    
+    // Salvar automaticamente a cada 5 segundos
+    let timeoutId;
+    textarea.addEventListener('input', function() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            localStorage.setItem(storageKey, textarea.value);
+        }, 5000);
+    });
+    
+    // Limpar rascunho após envio bem-sucedido
+    document.getElementById('form-envio').addEventListener('submit', function() {
+        localStorage.removeItem(storageKey);
+    });
+    
+    // Contador de caracteres (opcional)
+    textarea.addEventListener('input', function() {
+        const count = this.value.length;
+        console.log(`Caracteres: ${count}`);
+    });
+</script>
+{% endblock %}

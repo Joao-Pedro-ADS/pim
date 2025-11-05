@@ -1,0 +1,81 @@
+<!-- backend/core/templates/professor/atividade_confirm_delete.html -->
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Exclusão - SmartClass{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+        <!-- Header com aviso -->
+        <div class="bg-red-600 px-6 py-4">
+            <div class="flex items-center">
+                <div class="bg-white rounded-full p-3 mr-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">Confirmar Exclusão</h2>
+                    <p class="text-red-100 text-sm">Esta ação não pode ser desfeita</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteúdo -->
+        <div class="p-6">
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                    Você tem certeza que deseja excluir esta atividade?
+                </h3>
+                <div class="bg-gray-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <p class="font-medium text-gray-900">{{ atividade.titulo }}</p>
+                    <p class="text-sm text-gray-600 mt-1">{{ atividade.descricao|truncatewords:30 }}</p>
+                    <div class="flex gap-4 mt-3 text-sm text-gray-500">
+                        <span>
+                            <i class="far fa-calendar mr-1"></i>
+                            Prazo: {{ atividade.prazo_entrega|date:"d/m/Y" }}
+                        </span>
+                        <span>
+                            <i class="fas fa-paper-plane mr-1"></i>
+                            {{ atividade.total_submissoes }} submissão{{ atividade.total_submissoes|pluralize:"ões" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Avisos -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-yellow-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-yellow-800 mb-2">
+                            Atenção: O que será excluído
+                        </h4>
+                        <ul class="list-disc list-inside text-sm text-yellow-700 space-y-1">
+                            <li>A atividade "{{ atividade.titulo }}"</li>
+                            <li>Todas as {{ atividade.total_submissoes }} submissão{{ atividade.total_submissoes|pluralize:"ões" }} dos alunos</li>
+                            <li>Todas as notas e observações registradas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Formulário de confirmação -->
+            <form method="POST">
+                {% csrf_token %}
+                <div class="flex gap-3">
+                    <button type="submit" 
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
+                        <i class="fas fa-trash mr-2"></i>
+                        Sim, Excluir Permanentemente
+                    </button>
+                    <a href="{% url 'professor_atividades' %}" 
+                       class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
