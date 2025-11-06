@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from core import views
+from core.views import gerar_atividade_api
 
 urlpatterns = [
     # Django Admin
@@ -24,7 +25,7 @@ urlpatterns = [
     path('professor/alunos/', views.professor_alunos, name='professor_alunos'),
 
     # Professor - IA
-    path('api/gerar-atividade/', views.gerar_com_ia, name='gerar_com_ia'),
+    path('api/gerar-atividade/', views.gerar_atividade_api, name='gerar_com_ia'),
 
     # Aluno - Atividades
     path('aluno/atividades/', views.aluno_atividades, name='aluno_atividades'),

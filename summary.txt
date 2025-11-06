@@ -1,0 +1,175 @@
+# Sumário do Projeto Django - Sistema de Gestão de Atividades
+
+## 1. Estrutura de um Projeto Django
+
+Um projeto Django é organizado de forma modular, seguindo o padrão **MTV (Model-Template-View)**, que é uma variação do conhecido MVC (Model-View-Controller).
+
+- **Projeto (Project):** O contêiner principal. No nosso caso, a pasta `pim` é o projeto. Ele cuida das configurações globais (`settings.py`) e das rotas principais (`urls.py`).
+- **Aplicações (Apps):** Componentes reutilizáveis que encapsulam uma funcionalidade específica. A pasta `core` é uma aplicação. Uma aplicação idealmente pode ser plugada em outros projetos. Cada app tem seus próprios modelos, views, templates e testes.
+
+### Componentes do Padrão MTV:
+
+- **Model (`models.py`):** Representa a estrutura dos dados da aplicação. Cada classe em `models.py` mapeia para uma tabela no banco de dados. O Django ORM (Object-Relational Mapper) usa esses modelos para interagir com o banco de dados de forma "pythônica", sem a necessidade de escrever SQL diretamente.
+  - *Observação:* Aplicações são componentes reutilizáveis de modelos padrão MTV.
+
+- **Template (`templates/`):** A camada de apresentação. São os arquivos HTML que definem a estrutura da página. Eles contêm tags de template (`{% %}`) e variáveis (`{{ }}`) que são renderizadas pelas views para exibir dados dinâmicos.
+
+- **View (`views.py`):** A lógica de negócio. As views recebem requisições web (HTTP requests), interagem com os modelos para buscar ou salvar dados no banco, e renderizam os templates com os dados necessários para enviar uma resposta (HTTP response) ao cliente.
+
+- **URLs (`urls.py`):** O dispatcher de URLs. Mapeia as URLs (endereços web) para as views correspondentes. O `pim/urls.py` é o arquivo principal, que pode incluir rotas de arquivos `urls.py` de cada aplicação.
+
+## 2. Fluxo do Programa (Uso Prático)
+
+Este é o fluxo de uso da aplicação, desde a configuração inicial até a avaliação de uma atividade.
+
+### Passo 1: Criação do Superusuário (Professor)
+
+O primeiro passo é criar um superusuário, que no sistema representa o **Professor**.
+
+- **Ação Prática:** O administrador do sistema executa o comando no terminal:
+  ```bash
+  python manage.py createsuperuser
+  ```
+  Ele preenche `username`, `email` e `password`.
+
+- **Processo no Código:**
+  - O Django utiliza o modelo `Professor` (definido em `core/models.py`), que herda de `AbstractUser`. Isso significa que o professor tem todas as funcionalidades de um usuário padrão do Django (autenticação, permissões, etc.).
+  - O comando `createsuperuser` cria uma nova instância do modelo `Professor` no banco de dados com os atributos `is_staff` e `is_superuser` definidos como `True`.
+
+### Passo 2: Login do Professor
+
+- **Ação Prática:** O professor acessa a página de login, seleciona a opção "Professor", e insere seu `username` e `password`.
+
+- **Processo no Código:**
+  - A URL `/` é mapeada para a view `login_view` em `core/views.py`.
+  - A `login_view` verifica o `user_type`. Se for "professor", ela usa a função `authenticate` do Django, que valida as credenciais contra o modelo `Professor`.
+  - Se a autenticação for bem-sucedida, a função `login` cria uma sessão para o usuário, e ele é redirecionado para a lista de atividades do professor (`professor_atividades`).
+
+### Passo 3: Cadastro de Alunos
+
+O professor precisa cadastrar seus alunos no sistema.
+
+- **Ação Prática:** O professor acessa a área de administração do Django (`/admin/`), vai para a seção "Alunos" e clica em "Adicionar aluno". Ele preenche `nome`, `ra` e `password`.
+
+- **Processo no Código:**
+  - O modelo `Aluno` (`core/models.py`) é um modelo customizado, não um usuário Django. Ele tem campos como `nome`, `ra` e `password`.
+  - A senha não é salva em texto puro. O método `set_password` no modelo `Aluno` usa o sistema de hash do Django para criptografar a senha antes de salvar.
+  - A interface de admin para `Aluno` é customizada em `core/admin.py` pela classe `AlunoAdmin`.
+
+### Passo 4: Criação de uma Atividade (com ou sem IA)
+
+- **Ação Prática:**
+  1. O professor vai para a sua lista de atividades e clica em "Criar Nova Atividade".
+  2. Ele pode preencher `título`, `descrição` e `prazo de entrega` manualmente.
+  3. **(Opcional com IA):** Ele pode digitar um tema (ex: "Revolução Francesa"), clicar em "Gerar com IA", e o sistema preenche o título e a descrição automaticamente.
+  4. Ele clica em "Salvar".
+
+- **Processo no Código:**
+  - A URL `/professor/atividades/criar/` chama a view `atividade_create`.
+  - Esta view utiliza o `AtividadeForm` (de `core/forms.py`) para validar os dados.
+  - **Geração com IA:**
+    - O clique no botão "Gerar com IA" faz uma requisição `POST` para a API `/api/gerar-atividade/`.
+    - A view `gerar_atividade_api` recebe o tema, chama o `gemini_service` (`core/services/gemini_service.py`), que por sua vez se comunica com a API do Google Gemini.
+    - O serviço constrói um prompt detalhado, envia para a IA, processa a resposta para extrair título e descrição, e retorna um JSON para o frontend, que preenche os campos do formulário.
+  - Ao salvar, uma nova instância do modelo `Atividade` (`core/models.py`) é criada, associada ao professor logado.
+
+### Passo 5: Login do Aluno e Envio da Resposta
+
+- **Ação Prática:**
+  1. O aluno acessa a página de login, seleciona "Aluno", e entra com seu `RA` e `senha`.
+  2. Ele vê a lista de atividades. As pendentes estão marcadas.
+  3. Ele clica em uma atividade pendente, lê a descrição, e escreve sua resposta no campo de texto.
+  4. Ele clica em "Enviar Resposta".
+
+- **Processo no Código:**
+  - **Login:** A `login_view` verifica o `user_type` "aluno". Ela busca um `Aluno` com o `RA` fornecido e usa o método `check_password` para verificar a senha. Se correto, o `id` do aluno é salvo na sessão (`request.session['aluno_id']`).
+  - **Lista de Atividades:** A view `aluno_atividades` busca todas as atividades e, para cada uma, verifica se já existe uma `Submissao` para o aluno logado, mostrando o status ("Pendente", "Aguardando Correção" ou "Corrigido").
+  - **Envio:** A view `atividade_detail` exibe os detalhes da atividade. Ao submeter o formulário de resposta, ela cria uma nova instância do modelo `Submissao` (`core/models.py`), ligando a `Atividade`, o `Aluno` e o texto da `resposta`.
+
+### Passo 6: Correção da Atividade pelo Professor
+
+- **Ação Prática:**
+  1. O professor acessa a lista de atividades e vê uma notificação de submissões pendentes.
+  2. Ele clica na atividade para ver a lista de submissões.
+  3. Ele encontra a submissão do aluno, lê a resposta, atribui uma `nota` (de 0 a 10) e escreve uma `observacao` (feedback).
+  4. Ele clica em "Salvar Correção".
+
+- **Processo no Código:**
+  - A view `atividade_submissoes` lista todos os alunos e o status de suas submissões para uma dada atividade.
+  - A correção é feita via uma requisição `POST` (AJAX) para a URL `/professor/submissoes/<int:pk>/corrigir/`, que chama a view `submissao_corrigir`.
+  - Esta view encontra a `Submissao` correspondente, atualiza os campos `nota` e `observacao`.
+  - O método `save` do modelo `Submissao` é sobrescrito para que, ao salvar uma nota, o campo `corrigido_em` seja preenchido automaticamente com a data e hora atuais.
+
+### Passo 7: Aluno Visualiza a Nota
+
+- **Ação Prática:** O aluno faz login novamente, vai para a lista de atividades e vê que o status da atividade mudou para "Corrigido". Ele clica nela para ver sua `nota` e o `feedback` do professor.
+
+- **Processo no Código:**
+  - A view `aluno_atividades` agora mostra o status "Corrigido".
+  - Ao clicar, o aluno é direcionado para a view `atividade_resultado`, que busca a `Submissao` e exibe os detalhes, incluindo `nota` e `observacao`.
+
+## 3. Sumário de Funções do Backend
+
+Aqui está uma lista das principais funções e classes nas aplicações `core` e `pim`.
+
+### `core/views.py` (Views - Lógica Principal)
+
+- **Autenticação:**
+  - `login_view(request)`: Gerencia o login de professores e alunos.
+  - `logout_view(request)`: Realiza o logout para ambos os tipos de usuário.
+
+- **Views do Professor:**
+  - `professor_atividades(request)`: Lista todas as atividades criadas pelo professor logado.
+  - `atividade_create(request)`: Exibe o formulário e processa a criação de uma nova atividade.
+  - `atividade_edit(request, pk)`: Permite a edição de uma atividade existente.
+  - `atividade_delete(request, pk)`: Permite a exclusão de uma atividade.
+  - `atividade_submissoes(request, pk)`: Mostra todas as submissões (enviadas e pendentes) para uma atividade específica.
+  - `submissao_corrigir(request, pk)`: Processa a correção (nota e feedback) de uma submissão.
+  - `professor_alunos(request)`: Lista todos os alunos cadastrados no sistema com estatísticas.
+
+- **API (IA):**
+  - `gerar_atividade_api(request)`: Endpoint que recebe um tema e usa o `GeminiService` para gerar o conteúdo de uma atividade.
+
+- **Views do Aluno:**
+  - `aluno_atividades(request)`: Lista todas as atividades disponíveis para o aluno logado, com seus respectivos status.
+  - `atividade_detail(request, pk)`: Exibe os detalhes de uma atividade para o aluno e permite o envio da resposta.
+  - `atividade_resultado(request, pk)`: Mostra o resultado de uma submissão já corrigida, incluindo nota e feedback.
+
+### `core/models.py` (Modelos - Estrutura de Dados)
+
+- **`Professor(AbstractUser)`:**
+  - `__str__()`: Retorna o nome do professor.
+- **`Aluno(models.Model)`:**
+  - `__str__()`: Retorna o nome e RA do aluno.
+  - `set_password(raw_password)`: Criptografa e define a senha.
+  - `check_password(raw_password)`: Verifica a senha.
+  - `total_atividades()`, `atividades_enviadas()`, `atividades_pendentes()`, `media_notas()`: Métodos de agregação de dados.
+- **`Atividade(models.Model)`:**
+  - `__str__()`: Retorna o título da atividade.
+  - `pode_editar()`: Verifica se a atividade já recebeu submissões.
+  - `total_submissoes()`, `submissoes_pendentes()`, `submissoes_corrigidas()`: Métodos de contagem.
+  - `prazo_vencido()`, `get_status_badge_class()`, `dias_restantes()`: Métodos de ajuda para o frontend.
+- **`Submissao(models.Model)`:**
+  - `__str__()`: Retorna o aluno e o título da atividade.
+  - `get_status()`, `get_status_display()`: Retornam o status da submissão.
+  - `get_status_badge_class()`, `get_nota_badge_class()`: Métodos de ajuda para o frontend.
+  - `tempo_para_correcao()`: Calcula o tempo entre o envio e a correção.
+  - `save()`: Sobrescrito para definir a data de correção automaticamente.
+
+### `core/services/gemini_service.py` (Serviço de IA)
+
+- **`GeminiService` (classe):**
+  - `__init__()`: Configura a API do Google Gemini.
+  - `gerar_atividade(...)`: Constrói o prompt e gera o conteúdo de uma atividade.
+  - `_construir_prompt(...)`: Método privado para montar o prompt.
+  - `_processar_resposta(texto)`: Método privado para extrair título e descrição da resposta da IA.
+  - `gerar_feedback(...)`: Gera um feedback para a resposta de um aluno.
+
+### `core/decorators.py` (Decorators de Acesso)
+
+- `professor_required(view_func)`: Decorator que garante que apenas um professor autenticado acesse a view.
+- `aluno_required(view_func)`: Decorator que garante que apenas um aluno logado (via sessão) acesse a view.
+
+### `pim/urls.py` (Rotas)
+
+- Mapeia todas as URLs da aplicação para as views correspondentes em `core.views`.

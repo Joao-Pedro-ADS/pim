@@ -1,134 +1,185 @@
 <!-- backend/core/templates/professor/atividade_form.html -->
 {% extends 'base.html' %}
 
-{% block title %}{{ action }} Atividade - SmartClass{% endblock %}
+{% block title %}
+    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Atividade - SmartClass
+{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-        <a href="{% url 'professor_atividades' %}" 
-           class="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-flex items-center">
+    <div class="mb-6">
+        <a href="{% url 'professor_atividades' %}"
+           class="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center">
             <i class="fas fa-arrow-left mr-2"></i>
             Voltar para Atividades
         </a>
-        <h1 class="text-3xl font-bold text-gray-900 mt-4">{{ action }} Atividade</h1>
-        <p class="text-gray-600 mt-2">
-            {% if action == 'Criar' %}
-                Use a IA para ajudar na criação do conteúdo
-            {% else %}
-                Edite os detalhes da atividade
-            {% endif %}
-        </p>
     </div>
-    
-    <!-- Formulário -->
+
     <div class="bg-white rounded-lg shadow-lg p-8">
-        <form method="POST" id="atividade-form">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">
+            <i class="fas fa-file-alt mr-2 text-blue-600"></i>
+            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Atividade
+        </h1>
+
+        <!-- Card de Geração com IA -->
+        <div class="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg p-6 mb-8">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-magic text-purple-600 text-3xl"></i>
+                </div>
+                <div class="ml-4 flex-1">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">
+                        Gerar Atividade com IA
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        Use inteligência artificial para criar uma atividade personalizada.
+                        Preencha os campos abaixo e clique em gerar.
+                    </p>
+
+                    <!-- Formulário de IA -->
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Tema -->
+                            <div>
+                                <label for="ia-tema" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Tema da Atividade *
+                                </label>
+                                <input type="text"
+                                       id="ia-tema"
+                                       placeholder="Ex: Revolução Francesa"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+
+                            <!-- Disciplina -->
+                            <div>
+                                <label for="ia-disciplina" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Disciplina
+                                </label>
+                                <select id="ia-disciplina"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">Selecione...</option>
+                                    <option value="Matemática">Matemática</option>
+                                    <option value="Português">Português</option>
+                                    <option value="História">História</option>
+                                    <option value="Geografia">Geografia</option>
+                                    <option value="Ciências">Ciências</option>
+                                    <option value="Física">Física</option>
+                                    <option value="Química">Química</option>
+                                    <option value="Biologia">Biologia</option>
+                                    <option value="Inglês">Inglês</option>
+                                    <option value="Artes">Artes</option>
+                                    <option value="Educação Física">Educação Física</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Nível -->
+                            <div>
+                                <label for="ia-nivel" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Nível de Dificuldade
+                                </label>
+                                <select id="ia-nivel"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">Selecione...</option>
+                                    <option value="Fácil">Fácil</option>
+                                    <option value="Médio">Médio</option>
+                                    <option value="Difícil">Difícil</option>
+                                    <option value="Avançado">Avançado</option>
+                                </select>
+                            </div>
+
+                            <!-- Tipo -->
+                            <div>
+                                <label for="ia-tipo" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Tipo de Atividade
+                                </label>
+                                <select id="ia-tipo"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                    <option value="">Selecione...</option>
+                                    <option value="Dissertativa">Dissertativa</option>
+                                    <option value="Análise de Texto">Análise de Texto</option>
+                                    <option value="Resolução de Problemas">Resolução de Problemas</option>
+                                    <option value="Pesquisa">Pesquisa</option>
+                                    <option value="Estudo de Caso">Estudo de Caso</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Botão Gerar -->
+                        <div class="flex justify-end">
+                            <button type="button"
+                                    onclick="gerarAtividadeIA()"
+                                    id="btn-gerar-ia"
+                                    class="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center">
+                                <i class="fas fa-magic mr-2"></i>
+                                Gerar com IA
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading e Mensagens -->
+                    <div id="ia-loading" class="hidden mt-4">
+                        <div class="flex items-center text-purple-600">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            <span>Gerando atividade com IA...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário Principal -->
+        <form method="post" class="space-y-6">
             {% csrf_token %}
-            
+
             <!-- Título -->
-            <div class="mb-6">
+            <div>
                 <label for="id_titulo" class="block text-sm font-medium text-gray-700 mb-2">
                     Título da Atividade *
                 </label>
-                <input type="text" 
-                       name="titulo" 
-                       id="id_titulo" 
-                       required
-                       value="{% if form.titulo.value %}{{ form.titulo.value }}{% endif %}"
-                       class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                       placeholder="Ex: Exercícios de Matemática - Frações">
+                {{ form.titulo }}
+                {% if form.titulo.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.titulo.errors.0 }}</p>
+                {% endif %}
             </div>
-            
-            <!-- Descrição com IA -->
-            <div class="mb-6">
-                <div class="flex justify-between items-center mb-2">
-                    <label for="id_descricao" class="block text-sm font-medium text-gray-700">
-                        Descrição da Atividade *
-                    </label>
-                    <button type="button" 
-                            onclick="toggleAIPrompt()"
-                            class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded-lg transition-all flex items-center text-sm font-medium shadow-md">
-                        <i class="fas fa-magic mr-2"></i>
-                        Gerar com IA
-                    </button>
-                </div>
-                
-                <!-- Prompt para IA (inicialmente oculto) -->
-                <div id="ai-prompt-container" class="hidden mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg">
-                    <label for="ai-prompt" class="block text-sm font-medium text-purple-900 mb-2">
-                        <i class="fas fa-robot mr-2"></i>
-                        Descreva o que você quer que a IA crie:
-                    </label>
-                    <textarea id="ai-prompt" 
-                              rows="3"
-                              class="block w-full px-4 py-3 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3"
-                              placeholder="Ex: Crie uma atividade sobre fotossíntese para alunos do 6º ano, com 5 questões explicativas"></textarea>
-                    <div class="flex gap-2">
-                        <button type="button" 
-                                onclick="gerarComIA()"
-                                id="btn-gerar-ia"
-                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium">
-                            <i class="fas fa-wand-magic-sparkles mr-2"></i>
-                            Gerar Conteúdo
-                        </button>
-                        <button type="button" 
-                                onclick="regenerarIA()"
-                                id="btn-regenerar"
-                                class="hidden bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center text-sm font-medium">
-                            <i class="fas fa-sync-alt mr-2"></i>
-                            Regenerar
-                        </button>
-                        <button type="button" 
-                                onclick="toggleAIPrompt()"
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors text-sm font-medium">
-                            Cancelar
-                        </button>
-                    </div>
-                    <div id="ai-loading" class="hidden mt-3 flex items-center text-purple-700">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>
-                        <span>Gerando conteúdo com IA...</span>
-                    </div>
-                </div>
-                
-                <textarea name="descricao" 
-                          id="id_descricao" 
-                          required
-                          rows="12"
-                          class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Descreva a atividade ou use a IA para gerar o conteúdo...">{% if form.descricao.value %}{{ form.descricao.value }}{% endif %}</textarea>
-                <p class="text-sm text-gray-500 mt-2">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Você pode editar o texto gerado pela IA antes de salvar
+
+            <!-- Descrição -->
+            <div>
+                <label for="id_descricao" class="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição / Enunciado *
+                </label>
+                {{ form.descricao }}
+                {% if form.descricao.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.descricao.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-sm text-gray-500">
+                    Descreva a atividade de forma clara e detalhada
                 </p>
             </div>
-            
-            <!-- Prazo de Entrega -->
-            <div class="mb-8">
+
+            <!-- Prazo -->
+            <div>
                 <label for="id_prazo_entrega" class="block text-sm font-medium text-gray-700 mb-2">
                     Prazo de Entrega *
                 </label>
-                <input type="date" 
-                       name="prazo_entrega" 
-                       id="id_prazo_entrega" 
-                       required
-                       value="{% if form.prazo_entrega.value %}{{ form.prazo_entrega.value|date:'Y-m-d' }}{% endif %}"
-                       class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                {{ form.prazo_entrega }}
+                {% if form.prazo_entrega.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.prazo_entrega.errors.0 }}</p>
+                {% endif %}
             </div>
-            
+
             <!-- Botões -->
-            <div class="flex gap-4">
-                <button type="submit" 
-                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
-                    <i class="fas fa-save mr-2"></i>
-                    Salvar Atividade
-                </button>
-                <a href="{% url 'professor_atividades' %}" 
-                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
-                    <i class="fas fa-times mr-2"></i>
+            <div class="flex justify-end gap-3 pt-6 border-t">
+                <a href="{% url 'professor_atividades' %}"
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-6 py-3 rounded-lg transition-colors">
                     Cancelar
                 </a>
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Atividade
+                </button>
             </div>
         </form>
     </div>
@@ -137,80 +188,73 @@
 
 {% block extra_js %}
 <script>
-    let lastPrompt = '';
-    
-    function toggleAIPrompt() {
-        const container = document.getElementById('ai-prompt-container');
-        container.classList.toggle('hidden');
-        
-        if (!container.classList.contains('hidden')) {
-            document.getElementById('ai-prompt').focus();
-        }
-    }
-    
-    async function gerarComIA() {
-        const prompt = document.getElementById('ai-prompt').value.trim();
-        
-        if (!prompt) {
-            showToast('Por favor, descreva o que você quer que a IA crie', 'warning');
+    async function gerarAtividadeIA() {
+        const tema = document.getElementById('ia-tema').value.trim();
+        const disciplina = document.getElementById('ia-disciplina').value;
+        const nivel = document.getElementById('ia-nivel').value;
+        const tipo = document.getElementById('ia-tipo').value;
+
+        // Validação
+        if (!tema) {
+            showToast('Por favor, informe o tema da atividade', 'error');
             return;
         }
-        
-        lastPrompt = prompt;
-        
+
+        // UI feedback
         const btnGerar = document.getElementById('btn-gerar-ia');
-        const btnRegenerar = document.getElementById('btn-regenerar');
-        const loading = document.getElementById('ai-loading');
-        const descricaoField = document.getElementById('id_descricao');
-        
-        // Mostrar loading
+        const loading = document.getElementById('ia-loading');
+
         btnGerar.disabled = true;
         loading.classList.remove('hidden');
-        
+
         try {
-            const response = await fetch('{% url "gerar_com_ia" %}', {
+            const response = await fetch('/api/gerar-atividade/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrftoken
                 },
-                body: JSON.stringify({ prompt: prompt })
+                body: JSON.stringify({
+                    tema: tema,
+                    disciplina: disciplina,
+                    nivel_dificuldade: nivel,
+                    tipo_atividade: tipo
+                })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
-                descricaoField.value = data.conteudo;
-                showToast(data.message, 'success');
-                
-                // Mostrar botão regenerar
-                btnRegenerar.classList.remove('hidden');
-                
-                // Fechar o prompt após sucesso
-                setTimeout(() => {
-                    toggleAIPrompt();
-                }, 1000);
+                // Preencher campos do formulário
+                document.getElementById('id_titulo').value = data.titulo;
+                document.getElementById('id_descricao').value = data.descricao;
+
+                showToast('Atividade gerada com sucesso! Revise e ajuste se necessário.', 'success');
+
+                // Scroll suave para o formulário
+                document.getElementById('id_titulo').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
             } else {
-                showToast(data.message, 'error');
+                showToast(data.message || 'Erro ao gerar atividade', 'error');
             }
+
         } catch (error) {
-            showToast('Erro ao conectar com a IA. Tente novamente.', 'error');
             console.error('Erro:', error);
+            showToast('Erro ao conectar com o servidor', 'error');
         } finally {
             btnGerar.disabled = false;
             loading.classList.add('hidden');
         }
     }
-    
-    async function regenerarIA() {
-        if (lastPrompt) {
-            await gerarComIA();
+
+    // Permitir Enter no campo tema
+    document.getElementById('ia-tema')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            gerarAtividadeIA();
         }
-    }
-    
-    // Validação de data mínima (hoje)
-    document.addEventListener('DOMContentLoaded', function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('id_prazo_entrega').setAttribute('min', today);
     });
 </script>
+{% endblock %}

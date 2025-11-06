@@ -3,13 +3,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.db.models import Q
+from django.views.decorators.http import require_http_methods, require_POST
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q, Avg
 from django.utils import timezone
 from .decorators import professor_required, aluno_required
 from .models import Professor, Aluno, Atividade, Submissao
 from .forms import AtividadeForm, AlunoForm, SubmissaoForm, CorrecaoForm
-from .services import GeminiService
+from core.services.gemini_service import gemini_service
 import json
 
 
@@ -228,7 +229,7 @@ def professor_alunos(request):
         aluno.atividades_pendentes = total_atividades - aluno.atividades_enviadas
         aluno.media_notas = aluno.submissoes.filter(
             nota__isnull=False
-        ).aggregate(models.Avg('nota'))['nota__avg'] or 0
+        ).aggregate(Avg('nota'))['nota__avg'] or 0
 
     context = {
         'alunos': alunos,
@@ -237,33 +238,86 @@ def professor_alunos(request):
     return render(request, 'professor/alunos_list.html', context)
 
 
-@professor_required
-@require_POST
-def gerar_com_ia(request):
-    """Endpoint AJAX para gerar conteúdo com Gemini"""
-    try:
-        data = json.loads(request.body)
-        prompt = data.get('prompt', '').strip()
+# ============================================================================
+# API - GERAÇÃO COM IA
+# ============================================================================
 
-        if not prompt:
+@login_required
+@require_POST
+def gerar_atividade_api(request):
+    """
+    API endpoint para gerar atividade usando IA (Gemini)
+
+    Método: POST
+    Body (JSON):
+    {
+        "tema": "string (obrigatório)",
+        "disciplina": "string (opcional)",
+        "nivel_dificuldade": "string (opcional)",
+        "tipo_atividade": "string (opcional)"
+    }
+
+    Retorna:
+    {
+        "success": true,
+        "titulo": "...",
+        "descricao": "..."
+    }
+    """
+    try:
+        # Verificar se é professor
+        if not isinstance(request.user, Professor):
             return JsonResponse({
                 'success': False,
-                'message': 'Por favor, forneça um contexto para a IA.'
+                'message': 'Apenas professores podem gerar atividades'
+            }, status=403)
+
+        # Parse do JSON
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'JSON inválido'
             }, status=400)
 
-        gemini_service = GeminiService()
-        conteudo_gerado = gemini_service.gerar_atividade(prompt)
+        # Validar tema
+        tema = data.get('tema', '').strip()
+        if not tema:
+            return JsonResponse({
+                'success': False,
+                'message': 'O tema é obrigatório'
+            }, status=400)
+
+        if len(tema) < 3:
+            return JsonResponse({
+                'success': False,
+                'message': 'O tema deve ter pelo menos 3 caracteres'
+            }, status=400)
+
+        # Parâmetros opcionais
+        disciplina = data.get('disciplina', '').strip() or None
+        nivel_dificuldade = data.get('nivel_dificuldade', '').strip() or None
+        tipo_atividade = data.get('tipo_atividade', '').strip() or None
+
+        # Gerar atividade usando o serviço Gemini
+        resultado = gemini_service.gerar_atividade(
+            tema=tema,
+            disciplina=disciplina,
+            nivel_dificuldade=nivel_dificuldade,
+            tipo_atividade=tipo_atividade
+        )
 
         return JsonResponse({
             'success': True,
-            'conteudo': conteudo_gerado,
-            'message': 'Conteúdo gerado com sucesso!'
+            'titulo': resultado['titulo'],
+            'descricao': resultado['descricao']
         })
 
     except Exception as e:
         return JsonResponse({
             'success': False,
-            'message': f'Erro ao gerar conteúdo: {str(e)}'
+            'message': f'Erro ao gerar atividade: {str(e)}'
         }, status=500)
 
 
