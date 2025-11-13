@@ -1,0 +1,42 @@
+# Ambiente virtual
+.venv/
+venv/
+ENV/
+env/
+
+# Arquivos de configuração sensíveis
+.env
+*.env
+
+# Arquivos de cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+logs/
+debug.log
+
+# Banco de dados local (SQLite, se houver)
+db.sqlite3
+
+# Diretórios de build
+build/
+dist/
+*.egg-info/
+
+# Arquivos temporários e do sistema
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Docker
+*.pid
+docker-compose.override.yml
+
+# Arquivos de migração que podem ser gerados automaticamente
+*/migrations/__pycache__/
+*/migrations/*.pyc
